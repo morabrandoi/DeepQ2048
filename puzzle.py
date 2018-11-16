@@ -90,22 +90,35 @@ class GameGrid(Frame):
         self.update_idletasks()
 
     def key_down(self, event):
+        state, action, state_after, reward, terminal = (None, None, None, None, False)
+
         key = repr(event.char)
         if key in self.commands:
+            state = self.matrix[:]
             self.matrix, done, score_increase = self.commands[repr(event.char)](self.matrix)
             if done:
+                action = key[:]
+                reward = score_increase
                 self.score += score_increase
                 print(self.score, score_increase)
                 self.matrix = add_two_or_four(self.matrix)
                 self.update_grid_cells()
+                state_after = self.matrix[:]
                 done = False
                 if game_state(self.matrix) == 'win':
+                    terminal = True
                     self.grid_cells[1][1].configure(text="You", bg=BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(text="Win!", bg=BACKGROUND_COLOR_CELL_EMPTY)
                 if game_state(self.matrix) == 'lose':
+                    terminal = True
                     self.grid_cells[1][1].configure(text="You", bg=BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(text="Lose!", bg=BACKGROUND_COLOR_CELL_EMPTY)
-
+                five_tup = (state, action, state_after, reward, terminal)
+                [print(row) for row in state]
+                print(action)
+                [print(row) for row in state_after]
+                print(reward)
+                print(terminal, "\n")
     # def generate_next(self):
     #     index = (self.gen(), self.gen())
     #     while self.matrix[index[0]][index[1]] != 0:
