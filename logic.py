@@ -1,5 +1,5 @@
 
-from random import randint
+from random import randint, random
 
 
 def new_game(n):
@@ -10,13 +10,13 @@ def new_game(n):
     return matrix
 
 
-def add_two(mat):
+def add_two_or_four(mat):
     a = randint(0, len(mat)-1)
     b = randint(0, len(mat)-1)
     while(mat[a][b] != 0):
         a = randint(0, len(mat)-1)
         b = randint(0, len(mat)-1)
-    mat[a][b] = 2
+    mat[a][b] = [2, 4][(0 if random() < .9 else 1)]
     return mat
 
 
@@ -76,13 +76,16 @@ def cover_up(mat):
 
 def merge(mat):
     done = False
+    score_increase = 0
     for i in range(4):
         for j in range(3):
             if mat[i][j] == mat[i][j+1] and mat[i][j] != 0:
                 mat[i][j] *= 2
                 mat[i][j+1] = 0
                 done = True
-    return (mat, done)
+                score_increase = mat[i][j]
+
+    return (mat, done, score_increase)
 
 
 def up(game):
@@ -95,7 +98,7 @@ def up(game):
         done = done or temp[1]
         game = cover_up(game)[0]
         game = transpose(game)
-        return (game, done)
+        return (game, done, temp[2])
 
 
 def down(game):
@@ -107,7 +110,7 @@ def down(game):
         done = done or temp[1]
         game = cover_up(game)[0]
         game = transpose(reverse(game))
-        return (game, done)
+        return (game, done, temp[2])
 
 
 def left(game):
@@ -118,7 +121,7 @@ def left(game):
         game = temp[0]
         done = done or temp[1]
         game = cover_up(game)[0]
-        return (game, done)
+        return (game, done, temp[2])
 
 
 def right(game):
@@ -131,4 +134,4 @@ def right(game):
         done = done or temp[1]
         game = cover_up(game)[0]
         game = reverse(game)
-        return (game, done)
+        return (game, done, temp[2])

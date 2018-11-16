@@ -22,5 +22,4 @@ To start the game, run:
 Contributors:
 ==
 
-- [Tay Yang Shun](http://github.com/yangshun)
-- [Emmanuel Goh](http://github.com/emman27)
+- [Brando Mora](http://github.com/morabrandoi)
