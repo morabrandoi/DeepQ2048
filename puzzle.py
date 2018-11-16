@@ -2,6 +2,7 @@ from tkinter import Frame, Label, CENTER
 from logic import new_game, add_two_or_four, game_state, up, down, left, right
 from random import randint
 
+
 SIZE = 500
 GRID_LEN = 4
 GRID_PADDING = 10
@@ -35,7 +36,7 @@ class GameGrid(Frame):
         Frame.__init__(self)
 
         self.grid()
-        self.master.title('2048')
+        self.master.title('DeepQ2048')
         self.master.bind("<Key>", self.key_down)
 
         self.commands = {KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left,
