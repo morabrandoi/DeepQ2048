@@ -83,7 +83,7 @@ def merge(mat):
                 mat[i][j] *= 2
                 mat[i][j+1] = 0
                 done = True
-                score_increase = mat[i][j]
+                score_increase += mat[i][j]
 
     return (mat, done, score_increase)
 
