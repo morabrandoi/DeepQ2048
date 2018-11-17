@@ -23,7 +23,7 @@ def add_two_or_four(mat):
 def game_state(mat):
     for i in range(len(mat)):
         for j in range(len(mat[0])):
-            if mat[i][j] == 2048:
+            if mat[i][j] == 8192:
                 return 'win'
     for i in range(len(mat)-1):
         for j in range(len(mat[0])-1):
@@ -61,11 +61,12 @@ def transpose(mat):
 
 
 def cover_up(mat):
-    new = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    size = len(mat)
+    new = [[0]*size for _ in range(size)]
     done = False
-    for i in range(4):
+    for i in range(size):
         count = 0
-        for j in range(4):
+        for j in range(size):
             if mat[i][j] != 0:
                 new[i][count] = mat[i][j]
                 if j != count:
@@ -75,10 +76,11 @@ def cover_up(mat):
 
 
 def merge(mat):
+    size = len(mat)
     done = False
     score_increase = 0
-    for i in range(4):
-        for j in range(3):
+    for i in range(size):
+        for j in range(size - 1):
             if mat[i][j] == mat[i][j+1] and mat[i][j] != 0:
                 mat[i][j] *= 2
                 mat[i][j+1] = 0

@@ -1,6 +1,7 @@
 from tkinter import Frame, Label, CENTER
 from logic import new_game, add_two_or_four, game_state, up, down, left, right
 from random import randint
+import time
 
 
 SIZE = 500
@@ -12,12 +13,13 @@ BACKGROUND_COLOR_CELL_EMPTY = "#9e948a"
 BACKGROUND_COLOR_DICT = {2: "#eee4da", 4: "#ede0c8", 8: "#f2b179",
                          16: "#f59563", 32: "#f67c5f", 64: "#f65e3b",
                          128: "#edcf72", 256: "#edcc61", 512: "#edc850",
-                         1024: "#edc53f", 2048: "#edc22e"}
+                         1024: "#edc53f", 2048: "#edc22e", 4096: "#559938",
+                         8192: "#86e7f4"}
 
 CELL_COLOR_DICT = {2: "#776e65", 4: "#776e65", 8: "#f9f6f2", 16: "#f9f6f2",
                    32: "#f9f6f2", 64: "#f9f6f2", 128: "#f9f6f2",
                    256: "#f9f6f2", 512: "#f9f6f2", 1024: "#f9f6f2",
-                   2048: "#f9f6f2"}
+                   2048: "#f9f6f2", 4096: "#f9f6f2", 8192: "#776e65"}
 FONT = ("Verdana", 40, "bold")
 
 KEY_UP_ALT = "\'\\uf700\'"
@@ -29,7 +31,6 @@ KEY_UP = "'w'"
 KEY_DOWN = "'s'"
 KEY_LEFT = "'a'"
 KEY_RIGHT = "'d'"
-
 
 class GameGrid(Frame):
     def __init__(self):
@@ -74,7 +75,7 @@ class GameGrid(Frame):
         return randint(0, GRID_LEN - 1)
 
     def init_matrix(self):
-        self.matrix = new_game(4)
+        self.matrix = new_game(GRID_LEN)
 
         self.matrix = add_two_or_four(self.matrix)
         self.matrix = add_two_or_four(self.matrix)
@@ -106,6 +107,7 @@ class GameGrid(Frame):
                 state_after = self.matrix[:]
                 done = False
                 if game_state(self.matrix) == 'win':
+                    time.sleep(5)
                     terminal = True
                     self.grid_cells[1][1].configure(text="You", bg=BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(text="Win!", bg=BACKGROUND_COLOR_CELL_EMPTY)
