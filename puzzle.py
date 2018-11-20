@@ -37,7 +37,7 @@ class GameGrid(Frame):
 
         self.grid()
         self.master.title('DeepQ2048')
-        self.master.bind("<Key>", self.key_down)
+        self.master.bind("<Key>", self.take_action)
 
         self.commands = {KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left,
                          KEY_RIGHT: right, KEY_UP_ALT: up, KEY_DOWN_ALT: down,
@@ -50,7 +50,8 @@ class GameGrid(Frame):
         self.init_grid()
         self.init_matrix()
         self.update_grid_cells()
-        self.mainloop()
+        self.update_idletasks()
+        self.update()
 
     def init_grid(self):
         background = Frame(self, bg=BACKGROUND_COLOR_GAME,
@@ -89,39 +90,38 @@ class GameGrid(Frame):
                     self.grid_cells[i][j].configure(text=str(new_number), bg=BACKGROUND_COLOR_DICT[new_number], fg=CELL_COLOR_DICT[new_number])
         self.update_idletasks()
 
-    def key_down(self, event):
-        state, action, state_after, reward, terminal = (None, None, None, None, False)
+    def give_recent_state(self):
+        return self.matrix
 
-        key = repr(event.char)
+    def take_action(self, event=None, action=None):
+        state, action, state_after, reward, terminal = (None, action, None, None, False)
+        if event is None:
+            key = action
+        elif action is None:
+            key = repr(event.char)
+
         if key in self.commands:
+            print(f"\n\npressing {key}\n\n")
             state = self.matrix[:]
-            self.matrix, done, score_increase = self.commands[repr(event.char)](self.matrix)
-            if done:
-                action = key[:]
-                reward = score_increase
-                self.score += score_increase
-                print(self.score, score_increase)
+            self.matrix, done, score_increase = self.commands[key](self.matrix)
+            # if done:
+            action = key[:]
+            reward = score_increase
+            self.score += score_increase
+            if [0 for row in self.matrix if 0 in row]:
                 self.matrix = add_two_or_four(self.matrix)
-                self.update_grid_cells()
-                state_after = self.matrix[:]
-                done = False
-                # if game_state(self.matrix) == 'win':
-                #     terminal = True
-                #     self.grid_cells[1][1].configure(text="You", bg=BACKGROUND_COLOR_CELL_EMPTY)
-                #     self.grid_cells[1][2].configure(text="Win!", bg=BACKGROUND_COLOR_CELL_EMPTY)
-                if game_state(self.matrix) == 'lose':
-                    terminal = True
-                    self.grid_cells[0][0].configure(text="You", bg=BACKGROUND_COLOR_CELL_EMPTY)
-                    self.grid_cells[0][1].configure(text="Lose!", bg=BACKGROUND_COLOR_CELL_EMPTY)
-                    print("\n\n\n\nRESET\n\n\n\n")
-                    self.reset_episode()
-                five_tup = (state, action, state_after, reward, terminal)
+            self.update_grid_cells()
+            state_after = self.matrix[:]
+            done = False
 
-                [print(row) for row in state]
-                print(action)
-                [print(row) for row in state_after]
-                print(reward)
-                print(terminal, "\n")
+            if game_state(self.matrix) == 'lose' or state_after == state:
+                terminal = True
+
+                print("\n\n\n\nRESET\n\n\n\n")
+                self.reset_episode()
+            five_tup = (state, action, state_after, reward, terminal)
+            print("FIVE IN TAKE ACTION", five_tup)
+            return five_tup
 
     def reset_episode(self):
         self.episode_number += 1

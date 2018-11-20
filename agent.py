@@ -1,19 +1,24 @@
-from keras.datasets import mnist
 from keras.models import Sequential, load_model
-from keras.layers import Conv2D, Dropout, Flatten, MaxPooling2D, Dense
+from keras.layers import Dropout, Dense
 from keras.optimizers import Adam
-import keyboard as kb
 import random
+import numpy as np
 
 
 class Agent:
     def __init__(self, MODE):
         self.mode = MODE
-        self.model_file_path = ""
-        self.target_model_file_path = ""
+
+        self.model_name = "model.hdf5"
+        self.target_model_name = "target_model.hdf5"
+
+        self.model_file_path = f"./{self.model_name}"
+        self.target_model_file_path = f"./{self.target_model_name}"
+
         self.num_classes = 4  # up down left right
         self.batch_size = 4
         self.epochs = 1
+        self.answer_key = ["'w'", "'a'", "'s'", "'d'"]
         self.init_models()
         self.replay_memory = []
 
@@ -59,12 +64,18 @@ class Agent:
         return model
 
     def add_to_replay_mem(self, five_tup):
-        state, action, state_after, reward, terminal = five_tup
-        state = self.clean_train_data(state)
-        state_after = self.clean_train_data(state_after)
+        if random.random() < 0.10:
+            state, action, state_after, reward, terminal = five_tup
+            state = self.clean_state_data(state)
+            state_after = self.clean_state_data(state_after)
+            new_five_tup = (state, action, state_after, reward, terminal)
+            self.replay_memory.append(new_five_tup)
 
-    def clean_train_data(self):
-        pass
+    def clean_state_data(self, state):
+        state_np = np.array(state)
+        state_np = state_np.flatten()
+
+        return state_np
 
     def train_model(self, x_train):
         # five tup is state, action, state_after, reward, terminal
@@ -74,11 +85,14 @@ class Agent:
                                       epochs=self.epochs,
                                       verbose=1)
 
-        self.model.save(self.model_file_path)
+        self.model.save(self.model_name)
+        self.target_model.save(self.target_model_name)
 
-    def take_action(self, state):
-        action = self.model.predict(state)
-        print(action)
+    def decide_move(self, state):
+        predicted_Qs = list(self.model.predict(np.array([state, ]))[0])
+        max_q_action = max(predicted_Qs)
+        action = self.answer_key[predicted_Qs.index(max_q_action)]
+        return action
 
     '''
     batch_size = 512
