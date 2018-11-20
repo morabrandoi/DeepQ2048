@@ -1,11 +1,10 @@
 from tkinter import Frame, Label, CENTER
 from logic import new_game, add_two_or_four, game_state, up, down, left, right
 from random import randint
-import time
 
 
 SIZE = 500
-GRID_LEN = 3
+GRID_LEN = 4
 GRID_PADDING = 10
 
 BACKGROUND_COLOR_GAME = "#92877d"
@@ -45,13 +44,12 @@ class GameGrid(Frame):
                          KEY_LEFT_ALT: left, KEY_RIGHT_ALT: right}
 
         self.grid_cells = []
-        self.init_grid()
-        self.init_matrix()
-        self.update_grid_cells()
-
         self.score = 0
         self.episode_number = 0
 
+        self.init_grid()
+        self.init_matrix()
+        self.update_grid_cells()
         self.mainloop()
 
     def init_grid(self):
@@ -113,26 +111,20 @@ class GameGrid(Frame):
                 #     self.grid_cells[1][2].configure(text="Win!", bg=BACKGROUND_COLOR_CELL_EMPTY)
                 if game_state(self.matrix) == 'lose':
                     terminal = True
-                    self.grid_cells[1][1].configure(text="You", bg=BACKGROUND_COLOR_CELL_EMPTY)
-                    self.grid_cells[1][2].configure(text="Lose!", bg=BACKGROUND_COLOR_CELL_EMPTY)
-                    print("RESET")
+                    self.grid_cells[0][0].configure(text="You", bg=BACKGROUND_COLOR_CELL_EMPTY)
+                    self.grid_cells[0][1].configure(text="Lose!", bg=BACKGROUND_COLOR_CELL_EMPTY)
+                    print("\n\n\n\nRESET\n\n\n\n")
                     self.reset_episode()
                 five_tup = (state, action, state_after, reward, terminal)
+
                 [print(row) for row in state]
                 print(action)
                 [print(row) for row in state_after]
                 print(reward)
                 print(terminal, "\n")
-    # def generate_next(self):
-    #     index = (self.gen(), self.gen())
-    #     while self.matrix[index[0]][index[1]] != 0:
-    #         index = (self.gen(), self.gen())
-    #     self.matrix[index[0]][index[1]] = 2
 
     def reset_episode(self):
+        self.episode_number += 1
         self.init_matrix()
         self.update_grid_cells()
         self.score = 0
-
-
-gamegrid = GameGrid()
