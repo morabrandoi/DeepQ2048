@@ -4,7 +4,7 @@ from keras.layers import Dropout, Dense
 from keras.optimizers import Adam
 import random
 import numpy as np
-
+import pickle
 
 class Agent:
     def __init__(self, MODE, EPIS):
@@ -27,7 +27,14 @@ class Agent:
         self.answer_key = ["'w'", "'a'", "'s'", "'d'"]
         self.init_models()
         self.mem_capacity = 1000
-        self.replay_memory = []
+        self.replay_memory_file = "replay_memory.p"
+        self.replay_memory = self.init_replay_mem()
+
+    def init_replay_mem(self):
+        try:
+            return pickle.load(open(self.replay_memory_file, "rb"))
+        except:
+            return []
 
     def init_models(self):
         if self.mode == "train":
@@ -82,7 +89,6 @@ class Agent:
         if len(self.replay_memory) > self.mem_capacity:
             self.replay_memory = self.replay_memory[2:]
 
-
     def clean_state_data(self, state):
         state_np = np.array(state)
         state_np = state_np.flatten()
@@ -97,6 +103,7 @@ class Agent:
     def save_model(self):
         self.model.save(self.model_name)
         self.target_model.save(self.target_model_name)
+        pickle.dump(self.replay_memory, open(self.replay_memory_file, "wb"))
 
     def train_model(self):
         sample = random.sample(self.replay_memory, 16)
@@ -119,25 +126,10 @@ class Agent:
         train_x = np.array(train_x)
         train_y = np.array(train_y)
 
-
         self.history = self.model.fit(train_x, train_y,
                                       batch_size=self.batch_size,
                                       epochs=self.epochs,
                                       verbose=1)
-        # state, action, state_after, reward, terminal = five_tup
-        # state = self.clean_state_data(state)
-        # state_after = self.clean_state_data(state_after)
-        #
-        # if terminal is True:
-        #     target = reward
-        # else:
-        #     targ_pred = list(self.target_model.predict(np.array([state_after, ]))[0])
-        #     target = reward + (self.gamma * max(targ_pred))
-        #
-        # self.history = self.model.fit(np.array([state, ]), np.array([target, ]),
-        #                               batch_size=self.batch_size,
-        #                               epochs=self.epochs,
-        #                               verbose=1)
 
         if self.episode_num % 25 == 0 and self.episode_num != 0:
             self.save_model()
