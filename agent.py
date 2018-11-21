@@ -22,10 +22,11 @@ class Agent:
         self.epsilon_decay = self.epsilon / (self.total_episodes-3)
 
         self.num_classes = 4  # w a s d
-        self.batch_size = 1
+        self.batch_size = 16
         self.epochs = 1
         self.answer_key = ["'w'", "'a'", "'s'", "'d'"]
         self.init_models()
+        self.mem_capacity = 1000
         self.replay_memory = []
 
     def init_models(self):
@@ -73,12 +74,14 @@ class Agent:
         return model
 
     def add_to_replay_mem(self, five_tup):
-
         state, action, state_after, reward, terminal = five_tup
         state = self.clean_state_data(state)
         state_after = self.clean_state_data(state_after)
         new_five_tup = (state, action, state_after, reward, terminal)
         self.replay_memory.append(new_five_tup)
+        if len(self.replay_memory) > self.mem_capacity:
+            self.replay_memory = self.replay_memory[2:]
+
 
     def clean_state_data(self, state):
         state_np = np.array(state)
@@ -95,23 +98,48 @@ class Agent:
         self.model.save(self.model_name)
         self.target_model.save(self.target_model_name)
 
-    def train_model(self, five_tup):
-        state, action, state_after, reward, terminal = five_tup
-        state = self.clean_state_data(state)
-        state_after = self.clean_state_data(state_after)
+    def train_model(self):
+        sample = random.sample(self.replay_memory, 16)
+        train_y = []
+        train_x = []
+        for fTup in sample:
+            fTup = list(fTup)
+            fTup[0] = self.clean_state_data(fTup[0])
+            fTup[2] = self.clean_state_data(fTup[2])
 
-        if terminal is True:
-            target = reward
-        else:
-            targ_pred = list(self.target_model.predict(np.array([state_after, ]))[0])
-            target = reward + (self.gamma * max(targ_pred))
+            train_x.append(fTup[0])
 
-        self.history = self.model.fit(np.array([state, ]), np.array([target, ]),
+            if fTup[4] is True:
+                train_y.append(fTup[3])
+            else:
+                targ_pred = list(self.target_model.predict(np.array([fTup[2], ]))[0])
+                target = fTup[3] + (self.gamma * max(targ_pred))
+                train_y.append(target)
+        print(f"train_x: {train_x}, train_y: {train_y}")
+        train_x = np.array(train_x)
+        train_y = np.array(train_y)
+
+
+        self.history = self.model.fit(train_x, train_y,
                                       batch_size=self.batch_size,
                                       epochs=self.epochs,
                                       verbose=1)
+        # state, action, state_after, reward, terminal = five_tup
+        # state = self.clean_state_data(state)
+        # state_after = self.clean_state_data(state_after)
+        #
+        # if terminal is True:
+        #     target = reward
+        # else:
+        #     targ_pred = list(self.target_model.predict(np.array([state_after, ]))[0])
+        #     target = reward + (self.gamma * max(targ_pred))
+        #
+        # self.history = self.model.fit(np.array([state, ]), np.array([target, ]),
+        #                               batch_size=self.batch_size,
+        #                               epochs=self.epochs,
+        #                               verbose=1)
 
-        if self.episode_num % 50 == 0:
+        if self.episode_num % 25 == 0 and self.episode_num != 0:
             self.save_model()
 
     def decide_move(self, state):

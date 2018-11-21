@@ -27,18 +27,19 @@ for episode in range(episodes):
     while still_playing:
 
         if episode >= episodes - 2:
-            time.sleep(0.3)
+            time.sleep(0.5)
         action = agent.decide_move(recent_state)
         five_tup = environment.take_action(event=None, action=action)
 
         environment.update_idletasks()
         environment.update()
 
+        agent.add_to_replay_mem(five_tup)
         if five_tup[4] is True or five_tup[0] == five_tup[2]:
             still_playing = False
         if MODE != "play":
-            agent.train_model(five_tup)
-
+            if episode % 16 == 0 and episode != 0:
+                agent.train_model()
             if episode % 25 == 0:
                 agent.target_model.set_weights(agent.model.get_weights())
         recent_state = agent.clean_state_data(five_tup[2])
