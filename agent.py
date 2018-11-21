@@ -1,3 +1,4 @@
+import keras.backend as K
 from keras.models import Sequential, load_model
 from keras.layers import Dropout, Dense
 from keras.optimizers import Adam
@@ -15,8 +16,11 @@ class Agent:
         self.model_file_path = f"./{self.model_name}"
         self.target_model_file_path = f"./{self.target_model_name}"
 
-        self.num_classes = 4  # up down left right
-        self.batch_size = 4
+        self.episode_num = 0
+        self.epsilon = 0.05
+        self.gamma = 0.9
+        self.num_classes = 4  # w a s d
+        self.batch_size = 1
         self.epochs = 1
         self.answer_key = ["'w'", "'a'", "'s'", "'d'"]
         self.init_models()
@@ -31,7 +35,7 @@ class Agent:
 
         elif self.mode == "play":
             print("play play")
-
+            self.epsilon = 0
             self.model = load_model(self.model_file_path)
 
         elif self.mode == "create_new":
@@ -40,7 +44,7 @@ class Agent:
             self.model = self.create_model()
             self.target_model = self.create_model()
         else:
-            raise ValueError("Only use play or train in terminal")
+            raise ValueError("Only use play, train, or create_new in terminal")
 
     def create_model(self):
         model = Sequential()
@@ -57,7 +61,7 @@ class Agent:
 
         model.summary()
 
-        model.compile(loss="categorical_crossentropy",
+        model.compile(loss=self.custom_loss,
                       optimizer=Adam(),
                       metrics=["accuracy"])
 
@@ -77,90 +81,49 @@ class Agent:
 
         return state_np
 
-    def train_model(self, x_train):
-        # five tup is state, action, state_after, reward, terminal
-        target = 0
-        self.history = self.model.fit(x_train, target,
+    def custom_loss(self, y_pred, y_true):
+        squared_error = (y_pred - y_true) ** 2
+
+        sum_squared_error = np.sum(squared_error)
+        print()
+        mse = sum_squared_error / 1#len(list(y_true))
+
+        return(mse)
+
+    def train_model(self, five_tup):
+        state, action, state_after, reward, terminal = five_tup
+        state = self.clean_state_data(state)
+        state_after = self.clean_state_data(state_after)
+
+        if terminal is True:
+            target = reward
+        else:
+            targ_pred = list(self.target_model.predict(np.array([state, ]))[0])
+            target = reward + (self.gamma * max(targ_pred))
+
+        self.history = self.model.fit(np.array([state, ]), np.array([target, ]),
                                       batch_size=self.batch_size,
                                       epochs=self.epochs,
                                       verbose=1)
 
-        self.model.save(self.model_name)
-        self.target_model.save(self.target_model_name)
+        if self.episode_num % 50 == 0:
+            self.model.save(self.model_name)
+            self.target_model.save(self.target_model_name)
 
     def decide_move(self, state):
-        predicted_Qs = list(self.model.predict(np.array([state, ]))[0])
-        max_q_action = max(predicted_Qs)
-        action = self.answer_key[predicted_Qs.index(max_q_action)]
-        return action
+        if random.random() < self.epsilon:
+            return random.choice(self.answer_key)
+        else:
+            predicted_Qs = list(self.model.predict(np.array([state, ]))[0])
+            max_q_action = max(predicted_Qs)
+            action = self.answer_key[predicted_Qs.index(max_q_action)]
+            return action
 
     '''
-    batch_size = 512
-    num_classes = 10
-    epochs = 400
-
-    # the data shuffled and split between train and test sets
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-    print(x_train.shape)
-
     x_train = x_train.reshape(60000, 784)
     x_test = x_test.reshape(10000, 784)
 
     x_train = x_train.astype("float32")
     x_test = x_test.astype("float32")
 
-    x_train /= 255
-    x_test /= 255
-
-
-    # conver class vectors to binary class matrices
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
-
-
-    # defining model
-    model = Sequential()
-    model.add(Dense(400, activation="relu", input_shape=(784,)))
-    model.add(Dropout(0, 2))
-
-    model.add(Dense(200, activation="relu"))
-    model.add(Dropout(0, 2))
-
-    model.add(Dense(100, activation="relu"))
-    model.add(Dropout(0, 2))
-
-    model.add(Dense(50, activation="relu"))
-    model.add(Dropout(0, 2))
-
-    model.add(Dense(25, activation="relu"))
-    model.add(Dropout(0, 2))
-
-    model.add(Dense(num_classes, activation="softmax"))
-
-    model.summary()
-
-
-    model.compile(loss="categorical_crossentropy",
-                  optimizer=Adam(),
-                  metrics=["accuracy"])
-
-    early_stop = keras.callbacks.EarlyStopping(monitor='val_acc',
-                                               min_delta=0.01,
-                                               patience=2,
-                                               verbose=0,
-                                               mode='auto',
-                                               baseline=None)
-
-    history = model.fit(x_train, y_train,
-                        batch_size=batch_size,
-                        epochs=epochs,
-                        callbacks=[early_stop],
-                        verbose=1,
-                        validation_data=(x_test, y_test))
-    # model.save("./mnistNet.hdf5")
-
-    score = model.evaluate(x_test, y_test, verbose=1)
-    print("Test loss: ", score[0])
-    print("test accuracy: ", score[1])
     '''

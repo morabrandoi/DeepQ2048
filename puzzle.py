@@ -45,7 +45,6 @@ class GameGrid(Frame):
 
         self.grid_cells = []
         self.score = 0
-        self.episode_number = 0
 
         self.init_grid()
         self.init_matrix()
@@ -112,7 +111,7 @@ class GameGrid(Frame):
                 self.matrix = add_two_or_four(self.matrix)
             self.update_grid_cells()
             state_after = self.matrix[:]
-            done = False
+            # done = False
 
             if game_state(self.matrix) == 'lose' or state_after == state:
                 terminal = True
@@ -124,7 +123,6 @@ class GameGrid(Frame):
             return five_tup
 
     def reset_episode(self):
-        self.episode_number += 1
         self.init_matrix()
         self.update_grid_cells()
         self.score = 0
