@@ -18,11 +18,11 @@ class Agent:
         self.total_episodes = EPIS
         self.episode_num = 0
         self.gamma = 0.99
-        self.epsilon = 0.8
+        self.epsilon = 0.9
         self.epsilon_decay = self.epsilon / (self.total_episodes-3)
 
         self.num_classes = 4  # w a s d
-        self.batch_size = 16
+        self.batch_size = 1
         self.epochs = 1
         self.answer_key = ["'w'", "'a'", "'s'", "'d'"]
         self.init_models()
@@ -122,7 +122,6 @@ class Agent:
                 targ_pred = list(self.target_model.predict(np.array([fTup[2], ]))[0])
                 target = fTup[3] + (self.gamma * max(targ_pred))
                 train_y.append(target)
-        print(f"train_x: {train_x}, train_y: {train_y}")
         train_x = np.array(train_x)
         train_y = np.array(train_y)
 

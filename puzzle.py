@@ -45,6 +45,7 @@ class GameGrid(Frame):
 
         self.grid_cells = []
         self.score = 0
+        self.max_score = 0
 
         self.init_grid()
         self.init_matrix()
@@ -115,7 +116,6 @@ class GameGrid(Frame):
             if game_state(self.matrix) == 'lose' or state_after == state:
                 terminal = True
                 print(f"This EP Score: {self.score}")
-                print("\n\n\n\nRESET\n\n\n\n")
                 self.reset_episode()
             five_tup = (state, action, state_after, reward, terminal)
             return five_tup
@@ -123,4 +123,5 @@ class GameGrid(Frame):
     def reset_episode(self):
         self.init_matrix()
         self.update_grid_cells()
+        self.max_score = max(self.max_score, self.score)
         self.score = 0

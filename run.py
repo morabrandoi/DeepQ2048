@@ -3,10 +3,9 @@ from puzzle import GameGrid
 import sys
 import time
 
-# add action replay training
-# investigate y_train type
+# MAKE NOT ASYNCHRONUS
 
-episodes = 400
+episodes = 100
 
 
 if len(sys.argv) == 2:
@@ -25,7 +24,7 @@ for episode in range(episodes):
     recent_state = agent.clean_state_data(environment.give_recent_state())
 
     while still_playing:
-
+        time.sleep(0.05)
         if episode >= episodes - 2:
             time.sleep(0.5)
         action = agent.decide_move(recent_state)
@@ -45,5 +44,5 @@ for episode in range(episodes):
         recent_state = agent.clean_state_data(five_tup[2])
         agent.episode_num += 1
     agent.epsilon -= agent.epsilon_decay
-
+print(environment.max_score, "MAX SCORE")
 agent.save_model()
