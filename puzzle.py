@@ -100,7 +100,6 @@ class GameGrid(Frame):
             key = repr(event.char)
 
         if key in self.commands:
-            print(f"\n\npressing {key}\n\n")
             state = self.matrix[:]
             self.matrix, done, score_increase = self.commands[key](self.matrix)
             # if done:
@@ -115,11 +114,10 @@ class GameGrid(Frame):
 
             if game_state(self.matrix) == 'lose' or state_after == state:
                 terminal = True
-
+                print(f"This EP Score: {self.score}")
                 print("\n\n\n\nRESET\n\n\n\n")
                 self.reset_episode()
             five_tup = (state, action, state_after, reward, terminal)
-            print("FIVE IN TAKE ACTION", five_tup)
             return five_tup
 
     def reset_episode(self):
