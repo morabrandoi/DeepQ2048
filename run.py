@@ -2,10 +2,11 @@ from agent import Agent
 from puzzle import GameGrid
 import sys
 import time
+import numpy as np
 
-# MAKE NOT ASYNCHRONUS
+# normalize input values
 
-episodes = 24000
+episodes = 154000
 
 
 if len(sys.argv) == 2:
@@ -18,35 +19,44 @@ agent = Agent(MODE, episodes)
 
 
 # five tup is (state, action, state_after, reward, terminal)
+move = 0
 for episode in range(episodes):
 
     still_playing = True
-    recent_state = agent.clean_state_data(environment.give_recent_state())
+    recent_state = environment.give_recent_state()
 
-    move = 0
     while still_playing:
-        print(f"Episode {episode} and randomness at {agent.epsilon}")
+        print(f'''
+Episode: {episode}
+Move: {move}
+Randomness: {agent.epsilon}
+Highest Prev Ep Score: {environment.final_score_prev}
+              ''')
         if episode >= episodes - 2:
             time.sleep(0.5)
         action = agent.decide_move(recent_state)
         five_tup = environment.take_action(event=None, action=action)
-
-        agent.add_to_replay_mem(five_tup)
-        if five_tup[4] is True or five_tup[0] == five_tup[2]:
+        agent.add_to_replay_mem(np.array(five_tup))
+        if five_tup[4] is True:
             still_playing = False
 
         if MODE != "play":
             if move % 32 == 0 and move != 0:
                 agent.train_model()
-            if move % 100 == 0:
-                agent.target_model.set_weights(agent.model.get_weights())
 
-        recent_state = agent.clean_state_data(five_tup[2])
-
+        recent_state = five_tup[2]
         move += 1
 
+    if MODE != "play":
+        if episode % 100 == 0 and episode != 0:
+            agent.target_model.set_weights(agent.model.get_weights())
+
     agent.episode_num += 1
+    if agent.epsilon < 0 and MODE != "play":
+        agent.epsilon_decay = 0
+        agent.epsilon = 0.1
     agent.epsilon -= agent.epsilon_decay
 
 print(environment.max_score, "MAX SCORE")
-agent.save_model()
+if MODE != "play":
+    agent.save_model()

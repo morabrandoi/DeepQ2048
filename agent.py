@@ -1,6 +1,6 @@
 
 from keras.models import Sequential, load_model
-from keras.layers import Dropout, Dense
+from keras.layers import Dropout, Dense, Conv2D, Flatten, MaxPooling2D
 from keras.optimizers import Adam
 import random
 import numpy as np
@@ -19,15 +19,15 @@ class Agent:
         self.total_episodes = EPIS
         self.episode_num = 0
         self.gamma = 0.99
-        self.epsilon = 1.0
-        self.epsilon_decay = self.epsilon / (self.total_episodes-3)
+        self.epsilon = 1
+        self.epsilon_decay = self.epsilon / (self.total_episodes-140000)
 
         self.num_classes = 4  # w a s d
         self.batch_size = 1
         self.epochs = 1
         self.answer_key = ["'w'", "'a'", "'s'", "'d'"]
         self.init_models()
-        self.mem_capacity = 1000
+        self.mem_capacity = 4000
         self.replay_memory_file = "replay_memory.p"
         self.replay_memory = self.init_replay_mem()
 
@@ -63,15 +63,18 @@ class Agent:
 
     def create_model(self):
         model = Sequential()
-        model.add(Dense(100, activation="relu", input_shape=(16,)))
-        model.add(Dropout(0, 2))
+        model.add(Conv2D(16, (2, 2), activation="relu", input_shape=(4, 4, 1)))
+        model.add(Conv2D(16, (2, 2), activation="relu"))
+        model.add(MaxPooling2D(pool_size=2, strides=(1, 1), padding='valid'))
+        model.add(Dropout(0.25))
 
-        model.add(Dense(100, activation="relu"))
-        model.add(Dropout(0, 2))
+        model.add(Conv2D(16, (1,1), activation="relu"))
+        model.add(Conv2D(16, (1,1), activation="relu"))
+        model.add(Dropout(0.25))
 
+        model.add(Flatten())
         model.add(Dense(16, activation="relu"))
-        model.add(Dropout(0, 2))
-
+        model.add(Dropout(0.25))
         model.add(Dense(self.num_classes, activation="softmax"))
 
         model.summary()
@@ -83,17 +86,16 @@ class Agent:
 
     def add_to_replay_mem(self, five_tup):
         state, action, state_after, reward, terminal = five_tup
-        state = self.clean_state_data(state)
-        state_after = self.clean_state_data(state_after)
         new_five_tup = (state, action, state_after, reward, terminal)
         self.replay_memory.append(new_five_tup)
         if len(self.replay_memory) > self.mem_capacity:
             self.replay_memory = self.replay_memory[2:]
 
-    def clean_state_data(self, state):
-        state_np = np.array(state)
-        state_np = state_np.flatten()
-        return state_np
+    # def clean_state_data(self, state):
+    #     print("state in clean", state)
+    #     state_np = np.array(state)
+    #     # state_np = state_np.flatten()
+    #     return state_np
 
     def custom_loss(self, y_pred, y_true):
         squared_error = (y_pred - y_true) ** 2
@@ -107,26 +109,22 @@ class Agent:
         pickle.dump(self.replay_memory, open(self.replay_memory_file, "wb"))
 
     def train_model(self):
-        print("train_model")
         sample = random.sample(self.replay_memory, 32)
         train_y = []
         train_x = []
         for fTup in sample:
             fTup = list(fTup)
-            fTup[0] = self.clean_state_data(fTup[0])
-            fTup[2] = self.clean_state_data(fTup[2])
-
             train_x.append(fTup[0])
 
             if fTup[4] is True:
                 train_y.append(fTup[3])
             else:
-                targ_pred = list(self.target_model.predict(np.array([fTup[2], ]))[0])
+                processed = np.array(fTup[2]).reshape(1, 4, 4, 1)
+                targ_pred = list(self.target_model.predict(processed)[0])
                 target = fTup[3] + (self.gamma * max(targ_pred))
                 train_y.append(target)
-        train_x = np.array(train_x)
+        train_x = np.array(train_x).reshape(32, 4, 4, 1)
         train_y = np.array(train_y)
-
         self.history = self.model.fit(train_x, train_y,
                                       batch_size=self.batch_size,
                                       epochs=self.epochs,
@@ -139,7 +137,8 @@ class Agent:
         if random.random() < self.epsilon:
             return random.choice(self.answer_key)
         else:
-            predicted_Qs = list(self.model.predict(np.array([state, ]))[0])
+            processed = np.array(state).reshape(1, 4, 4, 1)
+            predicted_Qs = list(self.model.predict(processed)[0])
             max_q_action = max(predicted_Qs)
             action = self.answer_key[predicted_Qs.index(max_q_action)]
             return action

@@ -34,7 +34,7 @@ class GameGrid():
         self.commands = {KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left,
                          KEY_RIGHT: right}
 
-        self.grid_cells = []
+        self.final_score_prev = -1
         self.score = 0
         self.max_score = 0
         self.init_matrix()
@@ -52,6 +52,7 @@ class GameGrid():
         return self.matrix
 
     def take_action(self, event=None, action=None):
+        generated_new = False
         state, action, state_after, reward, terminal = (None, action, None, None, False)
         if event is None:
             key = action
@@ -62,26 +63,26 @@ class GameGrid():
             state = self.matrix[:]
             self.matrix, done, score_increase = self.commands[key](self.matrix)
 
-            print(done)
-            # if done:
             action = key[:]
             reward = score_increase
             self.score += score_increase
             if [0 for row in self.matrix if 0 in row]:
+                generated_new = True
                 self.matrix = add_two_or_four(self.matrix)
             state_after = self.matrix[:]
-            # done = False
 
-            if game_state(self.matrix) == 'lose' or state_after == state:
+            if game_state(self.matrix) == 'lose' or (state_after == state and generated_new == False):
+                reward -= 100
                 terminal = True
                 print(f"This EP Score: {self.score}")
                 self.reset_episode()
             five_tup = (state, action, state_after, reward, terminal)
             [print(row) for row in state]
-            print("\n")
+            print(action)
             return five_tup
 
     def reset_episode(self):
         self.init_matrix()
+        self.final_score_prev = self.score
         self.max_score = max(self.max_score, self.score)
         self.score = 0
