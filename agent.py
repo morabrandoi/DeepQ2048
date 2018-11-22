@@ -107,6 +107,7 @@ class Agent:
         pickle.dump(self.replay_memory, open(self.replay_memory_file, "wb"))
 
     def train_model(self):
+        print("train_model")
         sample = random.sample(self.replay_memory, 32)
         train_y = []
         train_x = []

@@ -73,6 +73,13 @@ def cover_up(mat):
                 count += 1
     return (new, done)
 
+# mat = [[1,4,0,0],[5,8,7,8],[7,5,11,0],[13,10,15,0]]
+# new, done = cover_up(mat)
+# print(done)
+# [print(row) for row in mat]
+# print("")
+# [print(row) for row in new]
+
 
 def merge(mat):
     size = len(mat)

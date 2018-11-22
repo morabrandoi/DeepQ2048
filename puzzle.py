@@ -1,4 +1,4 @@
-from tkinter import Frame, Label, CENTER
+# from tkinter import Frame, Label, CENTER
 from logic import new_game, add_two_or_four, game_state, up, down, left, right
 from random import randint
 
@@ -21,55 +21,23 @@ CELL_COLOR_DICT = {2: "#776e65", 4: "#776e65", 8: "#f9f6f2", 16: "#f9f6f2",
                    2048: "#f9f6f2", 4096: "#f9f6f2", 8192: "#776e65"}
 FONT = ("Verdana", 40, "bold")
 
-KEY_UP_ALT = "\'\\uf700\'"
-KEY_DOWN_ALT = "\'\\uf701\'"
-KEY_LEFT_ALT = "\'\\uf702\'"
-KEY_RIGHT_ALT = "\'\\uf703\'"
 
 KEY_UP = "'w'"
 KEY_DOWN = "'s'"
 KEY_LEFT = "'a'"
 KEY_RIGHT = "'d'"
 
-class GameGrid(Frame):
-    def __init__(self):
-        Frame.__init__(self)
 
-        self.grid()
-        self.master.title('DeepQ2048')
-        # self.master.bind("<Key>", self.take_action)
+class GameGrid():
+    def __init__(self):
 
         self.commands = {KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left,
-                         KEY_RIGHT: right, KEY_UP_ALT: up, KEY_DOWN_ALT: down,
-                         KEY_LEFT_ALT: left, KEY_RIGHT_ALT: right}
+                         KEY_RIGHT: right}
 
         self.grid_cells = []
         self.score = 0
         self.max_score = 0
-
-        self.init_grid()
         self.init_matrix()
-        self.update_grid_cells()
-        self.update_idletasks()
-        self.update()
-
-    def init_grid(self):
-        background = Frame(self, bg=BACKGROUND_COLOR_GAME,
-                           width=SIZE, height=SIZE)
-        background.grid()
-        for i in range(GRID_LEN):
-            grid_row = []
-            for j in range(GRID_LEN):
-                cell = Frame(background, bg=BACKGROUND_COLOR_CELL_EMPTY,
-                             width=SIZE/GRID_LEN, height=SIZE/GRID_LEN)
-                cell.grid(row=i, column=j,
-                          padx=GRID_PADDING, pady=GRID_PADDING)
-                t = Label(master=cell, text="", bg=BACKGROUND_COLOR_CELL_EMPTY,
-                          justify=CENTER, font=FONT, width=4, height=2)
-                t.grid()
-                grid_row.append(t)
-
-            self.grid_cells.append(grid_row)
 
     def gen(self):
         return randint(0, GRID_LEN - 1)
@@ -79,16 +47,6 @@ class GameGrid(Frame):
 
         self.matrix = add_two_or_four(self.matrix)
         self.matrix = add_two_or_four(self.matrix)
-
-    def update_grid_cells(self):
-        for i in range(GRID_LEN):
-            for j in range(GRID_LEN):
-                new_number = self.matrix[i][j]
-                if new_number == 0:
-                    self.grid_cells[i][j].configure(text="", bg=BACKGROUND_COLOR_CELL_EMPTY)
-                else:
-                    self.grid_cells[i][j].configure(text=str(new_number), bg=BACKGROUND_COLOR_DICT[new_number], fg=CELL_COLOR_DICT[new_number])
-        self.update_idletasks()
 
     def give_recent_state(self):
         return self.matrix
@@ -103,28 +61,27 @@ class GameGrid(Frame):
         if key in self.commands:
             state = self.matrix[:]
             self.matrix, done, score_increase = self.commands[key](self.matrix)
-            self.update_idletasks()
-            self.update()
+
             print(done)
-            if done:
-                action = key[:]
-                reward = score_increase
-                self.score += score_increase
-                if [0 for row in self.matrix if 0 in row]:
-                    self.matrix = add_two_or_four(self.matrix)
-                self.update_grid_cells()
-                state_after = self.matrix[:]
-                done = False
+            # if done:
+            action = key[:]
+            reward = score_increase
+            self.score += score_increase
+            if [0 for row in self.matrix if 0 in row]:
+                self.matrix = add_two_or_four(self.matrix)
+            state_after = self.matrix[:]
+            # done = False
 
             if game_state(self.matrix) == 'lose' or state_after == state:
                 terminal = True
                 print(f"This EP Score: {self.score}")
                 self.reset_episode()
             five_tup = (state, action, state_after, reward, terminal)
+            [print(row) for row in state]
+            print("\n")
             return five_tup
 
     def reset_episode(self):
         self.init_matrix()
-        self.update_grid_cells()
         self.max_score = max(self.max_score, self.score)
         self.score = 0
