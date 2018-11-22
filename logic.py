@@ -20,10 +20,10 @@ def add_two_or_four(mat):
 
 
 def game_state(mat):
-    for i in range(len(mat)):
-        for j in range(len(mat[0])):
-            if mat[i][j] == 8192:
-                return 'win'
+    # for i in range(len(mat)):
+    #     for j in range(len(mat[0])):
+    #         if mat[i][j] == 8192:
+    #             return 'win'
     for i in range(len(mat)-1):
         for j in range(len(mat[0])-1):
             if mat[i][j] == mat[i+1][j] or mat[i][j+1] == mat[i][j]:

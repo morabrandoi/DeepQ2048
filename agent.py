@@ -6,6 +6,7 @@ import random
 import numpy as np
 import pickle
 
+
 class Agent:
     def __init__(self, MODE, EPIS):
         self.mode = MODE
@@ -18,7 +19,7 @@ class Agent:
         self.total_episodes = EPIS
         self.episode_num = 0
         self.gamma = 0.99
-        self.epsilon = 0.9
+        self.epsilon = 1.0
         self.epsilon_decay = self.epsilon / (self.total_episodes-3)
 
         self.num_classes = 4  # w a s d
@@ -106,7 +107,7 @@ class Agent:
         pickle.dump(self.replay_memory, open(self.replay_memory_file, "wb"))
 
     def train_model(self):
-        sample = random.sample(self.replay_memory, 16)
+        sample = random.sample(self.replay_memory, 32)
         train_y = []
         train_x = []
         for fTup in sample:
@@ -130,7 +131,7 @@ class Agent:
                                       epochs=self.epochs,
                                       verbose=1)
 
-        if self.episode_num % 25 == 0 and self.episode_num != 0:
+        if self.episode_num % 50 == 0 and self.episode_num != 0:
             self.save_model()
 
     def decide_move(self, state):

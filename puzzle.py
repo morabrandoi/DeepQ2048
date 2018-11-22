@@ -37,7 +37,7 @@ class GameGrid(Frame):
 
         self.grid()
         self.master.title('DeepQ2048')
-        self.master.bind("<Key>", self.take_action)
+        # self.master.bind("<Key>", self.take_action)
 
         self.commands = {KEY_UP: up, KEY_DOWN: down, KEY_LEFT: left,
                          KEY_RIGHT: right, KEY_UP_ALT: up, KEY_DOWN_ALT: down,
@@ -103,15 +103,18 @@ class GameGrid(Frame):
         if key in self.commands:
             state = self.matrix[:]
             self.matrix, done, score_increase = self.commands[key](self.matrix)
-            # if done:
-            action = key[:]
-            reward = score_increase
-            self.score += score_increase
-            if [0 for row in self.matrix if 0 in row]:
-                self.matrix = add_two_or_four(self.matrix)
-            self.update_grid_cells()
-            state_after = self.matrix[:]
-            # done = False
+            self.update_idletasks()
+            self.update()
+            print(done)
+            if done:
+                action = key[:]
+                reward = score_increase
+                self.score += score_increase
+                if [0 for row in self.matrix if 0 in row]:
+                    self.matrix = add_two_or_four(self.matrix)
+                self.update_grid_cells()
+                state_after = self.matrix[:]
+                done = False
 
             if game_state(self.matrix) == 'lose' or state_after == state:
                 terminal = True
