@@ -76,7 +76,7 @@ class GameGrid():
                 terminal = True
                 print(f"This EP Score: {self.score}")
                 self.reset_episode()
-            five_tup = (state, action, state_after, reward, terminal)
+            five_tup = (state_after, reward, terminal)
             [print(row) for row in state]
             print(action)
             return five_tup

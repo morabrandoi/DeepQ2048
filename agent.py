@@ -8,28 +8,30 @@ import pickle
 
 
 class Agent:
-    def __init__(self, MODE, EPIS):
+    def __init__(self, MODE, EPISODES):
         self.mode = MODE
 
         self.model_name = "model.hdf5"
         self.target_model_name = "target_model.hdf5"
         self.model_file_path = f"./{self.model_name}"
         self.target_model_file_path = f"./{self.target_model_name}"
-
-        self.total_episodes = EPIS
-        self.episode_num = 0
-        self.gamma = 0.99
-        self.epsilon = 1
-        self.epsilon_decay = self.epsilon / (self.total_episodes-140000)
+        self.learning_rate = 0.01
 
         self.num_classes = 4  # w a s d
-        self.batch_size = 1
-        self.epochs = 1
         self.answer_key = ["'w'", "'a'", "'s'", "'d'"]
-        self.init_models()
         self.mem_capacity = 4000
         self.replay_memory_file = "replay_memory.p"
         self.replay_memory = self.init_replay_mem()
+
+        self.total_episodes = EPISODES
+        self.episode_num = 0
+        self.gamma = 0.99
+
+        self.epsilon = 1.0
+        self.epsilon_min = 0.1
+        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 1000
+
+        self.init_models()
 
     def init_replay_mem(self):
         try:
@@ -39,23 +41,14 @@ class Agent:
 
     def init_models(self):
         if self.mode == "train":
-            print("CHOO CHOO")
-
-            self.model = load_model(self.model_file_path,
-                                    custom_objects={'custom_loss': self.custom_loss})
-
-            self.target_model = load_model(self.target_model_file_path,
-                                           custom_objects={'custom_loss': self.custom_loss})
+            self.model = load_model(self.model_file_path)
+            self.target_model = load_model(self.target_model_file_path)
 
         elif self.mode == "play":
-            print("play play")
             self.epsilon = 0
-            self.model = load_model(self.model_file_path,
-                                    custom_objects={'custom_loss': self.custom_loss})
+            self.model = load_model(self.model_file_path)
 
         elif self.mode == "create_new":
-            print("creating new model")
-
             self.model = self.create_model()
             self.target_model = self.create_model()
         else:
@@ -68,8 +61,8 @@ class Agent:
         model.add(MaxPooling2D(pool_size=2, strides=(1, 1), padding='valid'))
         model.add(Dropout(0.25))
 
-        model.add(Conv2D(16, (1,1), activation="relu"))
-        model.add(Conv2D(16, (1,1), activation="relu"))
+        model.add(Conv2D(16, (1, 1), activation="relu"))
+        model.add(Conv2D(16, (1, 1), activation="relu"))
         model.add(Dropout(0.25))
 
         model.add(Flatten())
@@ -79,66 +72,58 @@ class Agent:
 
         model.summary()
 
-        model.compile(loss=self.custom_loss,
-                      optimizer=Adam())
+        model.compile(loss="mse",
+                      optimizer=Adam(lr=self.learning_rate))
 
         return model
 
-    def add_to_replay_mem(self, five_tup):
-        state, action, state_after, reward, terminal = five_tup
-        new_five_tup = (state, action, state_after, reward, terminal)
-        self.replay_memory.append(new_five_tup)
+    def remember(self, five_tup):
+        self.replay_memory.append(five_tup)
         if len(self.replay_memory) > self.mem_capacity:
             self.replay_memory = self.replay_memory[2:]
 
-    # def clean_state_data(self, state):
-    #     print("state in clean", state)
-    #     state_np = np.array(state)
-    #     # state_np = state_np.flatten()
-    #     return state_np
+    def train_model(self, batch_size=50):
+        minibatch = random.sample(self.replay_memory, batch_size)
+        train_y = []
+        train_x = []
+        for fTup in minibatch:
+            state_before_action, action, state_after_action, reward, done = list(fTup)
+            action_index = self.answer_key.index(action)
+            train_x.append(state_before_action)
 
-    def custom_loss(self, y_pred, y_true):
-        squared_error = (y_pred - y_true) ** 2
-        sum_squared_error = np.sum(squared_error)
-        mse = sum_squared_error / np.size(y_true)
-        return(mse)
+            if done is True:
+                target_for_one_action = reward
+            else:
+                processed_state_after = np.array(state_after_action).reshape(1, 4, 4, 1)
+                target_for_one_action = reward + (self.gamma * np.amax(self.target_model.predict(processed_state_after)[0]))
+
+            processed_state_before = np.array(state_before_action).reshape(1,4,4,1)
+            target_list = self.model.predict(processed_state_before)[0]
+            target_list[action_index] = target_for_one_action
+            train_y.append(target_list)
+
+        train_x = np.array(train_x).reshape(batch_size, 4, 4, 1)
+        train_y = np.array(train_y)
+        self.history = self.model.fit(train_x, train_y,
+                                      epochs=1,
+                                      verbose=1)
+
+        if self.episode_num % 25 == 0 and self.episode_num != 0:
+            self.save_model()
 
     def save_model(self):
         self.model.save(self.model_name)
         self.target_model.save(self.target_model_name)
         pickle.dump(self.replay_memory, open(self.replay_memory_file, "wb"))
 
-    def train_model(self):
-        sample = random.sample(self.replay_memory, 32)
-        train_y = []
-        train_x = []
-        for fTup in sample:
-            fTup = list(fTup)
-            train_x.append(fTup[0])
-
-            if fTup[4] is True:
-                train_y.append(fTup[3])
-            else:
-                processed = np.array(fTup[2]).reshape(1, 4, 4, 1)
-                targ_pred = list(self.target_model.predict(processed)[0])
-                target = fTup[3] + (self.gamma * max(targ_pred))
-                train_y.append(target)
-        train_x = np.array(train_x).reshape(32, 4, 4, 1)
-        train_y = np.array(train_y)
-        self.history = self.model.fit(train_x, train_y,
-                                      batch_size=self.batch_size,
-                                      epochs=self.epochs,
-                                      verbose=1)
-
-        if self.episode_num % 50 == 0 and self.episode_num != 0:
-            self.save_model()
-
     def decide_move(self, state):
         if random.random() < self.epsilon:
             return random.choice(self.answer_key)
         else:
-            processed = np.array(state).reshape(1, 4, 4, 1)
-            predicted_Qs = list(self.model.predict(processed)[0])
-            max_q_action = max(predicted_Qs)
-            action = self.answer_key[predicted_Qs.index(max_q_action)]
+            processed_state = np.array(state).reshape(1, 4, 4, 1)
+            action = self.answer_key[np.argmax(self.model.predict(processed_state)[0])]
             return action
+
+    def update_epsilon(self):
+        if self.epsilon > self.epsilon_min:
+            self.epsilon -= self.epsilon_decay

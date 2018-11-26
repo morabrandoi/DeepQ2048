@@ -1,12 +1,11 @@
 from agent import Agent
 from puzzle import GameGrid
 import sys
-import time
 import numpy as np
 
 # normalize input values
 
-episodes = 154000
+episodes = 61234
 
 
 if len(sys.argv) == 2:
@@ -15,48 +14,33 @@ else:
     MODE = 'train'
 
 environment = GameGrid()
-agent = Agent(MODE, episodes)
+bot = Agent(MODE, episodes)
 
 
 # five tup is (state, action, state_after, reward, terminal)
-move = 0
 for episode in range(episodes):
+    if MODE != "play":
+        if episode % 75 == 0 and episode != 0:
+            bot.target_model.set_weights(bot.model.get_weights())
 
     still_playing = True
-    recent_state = environment.give_recent_state()
-
+    state_before_action = environment.give_recent_state()
+    step = 0
     while still_playing:
-        print(f'''
-Episode: {episode}
-Move: {move}
-Randomness: {agent.epsilon}
-Highest Prev Ep Score: {environment.final_score_prev}
-              ''')
-        if episode >= episodes - 2:
-            time.sleep(0.5)
-        action = agent.decide_move(recent_state)
-        five_tup = environment.take_action(event=None, action=action)
-        agent.add_to_replay_mem(np.array(five_tup))
-        if five_tup[4] is True:
+
+        action = bot.decide_move(state_before_action)
+        state_after_action, reward, done = environment.take_action(event=None, action=action)
+        bot.remember(np.array((state_before_action, action, state_after_action, reward, done)))
+        if done is True:
             still_playing = False
 
         if MODE != "play":
-            if move % 32 == 0 and move != 0:
-                agent.train_model()
+            bot.train_model()
+            print(f"Score: {environment.final_score_prev}; Ep: {episode}; Rand: {round(bot.epsilon, 4)} ")
 
-        recent_state = five_tup[2]
-        move += 1
+        state_before_action = state_after_action
 
-    if MODE != "play":
-        if episode % 100 == 0 and episode != 0:
-            agent.target_model.set_weights(agent.model.get_weights())
-
-    agent.episode_num += 1
-    if agent.epsilon < 0 and MODE != "play":
-        agent.epsilon_decay = 0
-        agent.epsilon = 0.1
-    agent.epsilon -= agent.epsilon_decay
+    bot.episode_num += 1
+    bot.update_epsilon()
 
 print(environment.max_score, "MAX SCORE")
-if MODE != "play":
-    agent.save_model()
